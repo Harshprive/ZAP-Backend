@@ -20,6 +20,9 @@ def create_app():
     from app.routes.matching_routes import matching_bp
     from app.routes.admin_routes import admin_bp
     from app.routes.location_routes import location_bp 
+    from app.routes.issue_routes import issue_bp
+    app.register_blueprint(issue_bp, url_prefix="/api/user")
+
 
   
 

@@ -12,32 +12,41 @@ def match_user_with_providers(user_id, service):
     if not user:
         return {"msg": "User not found"}, 404
 
-    user_loc = user["location"]
+    user_location = user.get("location")
+    if not user_location:
+        return {"msg": "User location not found"}, 400
+
     providers = get_available_providers_by_service(service)
+    matched_providers = []
 
-    hotspot_providers = []
-    for p in providers:
-        dist = haversine_distance(user_loc, p["location"])
+    for provider in providers:
+        provider_loc = provider.get("location")
+        if not provider_loc:
+            continue
+
+        dist = haversine_distance(user_location, provider_loc)
         if dist <= 10:
-            p["distance"] = round(dist, 2)
-            hotspot_providers.append(p)
+            provider["distance"] = round(dist, 2)
+            matched_providers.append(provider)
 
-    if not hotspot_providers:
+    if not matched_providers:
         mongo.db.schedule_queue.insert_one({
             "user_id": ObjectId(user_id),
             "service": service,
             "timestamp": datetime.utcnow()
         })
         insert_log({
-            "action": "Request Scheduled",
+            "action": "Scheduled Request",
             "user_id": ObjectId(user_id),
             "service": service,
             "timestamp": datetime.utcnow()
         })
-        return {"msg": "No providers available, request added to schedule"}, 200
+        return {"msg": "No provider found nearby, request added to schedule"}, 200
 
-    selected = hotspot_providers[0]
-    est_time = int((selected["distance"] / 30) * 60)
+    # Select nearest
+    matched_providers.sort(key=lambda x: x["distance"])
+    selected = matched_providers[0]
+    est_time = int((selected["distance"] / 30) * 60)  # 30 km/h speed
 
     insert_request({
         "user_id": ObjectId(user_id),
@@ -50,7 +59,7 @@ def match_user_with_providers(user_id, service):
     })
 
     insert_log({
-        "action": "Request Matched",
+        "action": "Matched",
         "user_id": ObjectId(user_id),
         "provider_id": selected["_id"],
         "service": service,
@@ -60,7 +69,7 @@ def match_user_with_providers(user_id, service):
     return {
         "msg": "Provider matched",
         "provider": {
-            "name": selected["name"],
+            "name": selected.get("name"),
             "distance_km": selected["distance"],
             "estimated_time_min": est_time
         }

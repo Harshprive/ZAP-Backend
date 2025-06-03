@@ -12,3 +12,5 @@ def schedule_service(user_id, service_name):
     }
     mongo.db.schedules.insert_one(schedule_doc)
     return True
+def schedule_service_request(request_data):
+    return mongo.db.scheduled_requests.insert_one(request_data)
