@@ -1,1 +1,24 @@
+# Use official Python image
+FROM python:3.11-slim
+
+# Set working directory
+WORKDIR /app
+
+# Copy requirements file and install dependencies
+COPY requirements.txt .
+
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copy backend source code
+COPY . .
+
+# Expose the port your backend uses (adjust if needed)
+EXPOSE 5000
+
+# Command to run the backend app (adjust if using uvicorn or flask)
+# Example for Flask:
+CMD ["python", "app.py"]
+
+# Example for FastAPI (comment above CMD and uncomment below):
+# CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "5000"]
 
